@@ -1,0 +1,33 @@
+body { 
+    margin: 0; 
+    overflow: hidden; 
+    background-color: #222; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+canvas { 
+    display: block; 
+}
+#ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 8px;
+    pointer-events: none;
+    user-select: none;
+}
+h1 {
+    margin: 0 0 10px 0;
+    font-size: 24px;
+}
+p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+.controls {
+    color: #aaa;
+    font-size: 14px;
+    margin-top: 10px;
+}
