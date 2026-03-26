@@ -3,14 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple 3D Web Game</title>
+    <title>Suburbia Pacman Engine</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="ui">
+    <div id="main-menu" class="overlay active">
+        <h1>Suburbia Pacman</h1>
+        <button id="btn-play" disabled>Loading Assets...</button>
+        <button id="btn-editor" disabled>Map Editor</button>
+    </div>
+
+    <div id="ui" class="overlay">
         <h1>Learn 3 JS Games</h1>
         <p>Score: <span id="score" style="color: #ffcc00; font-weight: bold;">0 / 0</span></p>
         <p class="controls">Controls: <strong>W A S D</strong> to move</p>
+    </div>
+
+    <div id="editor-ui" class="overlay">
+        <h2>Map Builder</h2>
+        <div class="toolbar">
+            <label><input type="radio" name="tool" value="house" checked> Paint House 🧱</label>
+            <label><input type="radio" name="tool" value="road"> Erase to Road 🛣️</label>
+            <label><input type="radio" name="tool" value="gem"> Toggle Gem 💎</label>
+            <hr style="width: 100%; border-color: #555;">
+            <label><input type="radio" name="tool" value="player"> Set Player Spawn 🚙</label>
+            <label><input type="radio" name="tool" value="police"> Set Police Spawn 🚓</label>
+        </div>
+        <p class="controls" style="color: #ffcc00; margin-bottom: 15px;">Press <strong>R</strong> to rotate item</p>
+        <button id="btn-editor-play">Play Map</button>
+        <button id="btn-editor-menu" style="background:#d32f2f;">Back to Menu</button>
     </div>
     
     <!-- ES Module Shims for cross-browser module resolution -->

@@ -7,27 +7,90 @@ body {
 canvas { 
     display: block; 
 }
-#ui {
+.overlay {
     position: absolute;
+    pointer-events: none; /* Let clicks pass through default */
+    user-select: none;
+    display: none; /* Hide all overlays by default */
+}
+.overlay.active {
+    display: flex;
+    pointer-events: auto; /* Active menus catch clicks */
+}
+
+/* UI (Game HUD) */
+#ui {
     top: 20px;
     left: 20px;
     color: #ffffff;
     background: rgba(0, 0, 0, 0.5);
     padding: 15px;
     border-radius: 8px;
-    pointer-events: none;
-    user-select: none;
+    flex-direction: column;
 }
-h1 {
-    margin: 0 0 10px 0;
-    font-size: 24px;
+#ui h1 { margin: 0 0 10px 0; font-size: 24px; }
+#ui p { margin: 5px 0; font-size: 16px; }
+.controls { color: #aaa; font-size: 14px; margin-top: 10px; }
+
+/* Main Menu */
+#main-menu {
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
 }
-p {
-    margin: 5px 0;
+#main-menu h1 {
+    font-size: 64px;
+    margin-bottom: 40px;
+    color: #ffcc00;
+    text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.2);
+}
+button {
+    font-size: 20px;
+    padding: 15px 30px;
+    margin: 10px;
+    cursor: pointer;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    transition: background 0.2s, transform 0.1s;
+    font-weight: bold;
+}
+button:hover { background: #45a049; }
+button:active { transform: scale(0.95); }
+button:disabled { background: #555; cursor: not-allowed; }
+
+/* Editor UI */
+#editor-ui {
+    top: 20px; right: 20px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+    flex-direction: column;
+    pointer-events: auto;
+}
+#editor-ui h2 { margin: 0 0 15px 0; color: #4CAF50; }
+.toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.toolbar label {
+    cursor: pointer;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
     font-size: 16px;
+    display: flex;
+    align-items: center;
 }
-.controls {
-    color: #aaa;
-    font-size: 14px;
-    margin-top: 10px;
+.toolbar label input { margin-right: 10px; }
+.toolbar label:hover { background: rgba(255, 255, 255, 0.2); }
+#editor-ui button {
+    font-size: 16px; padding: 10px; margin: 5px 0; width: 100%;
 }
