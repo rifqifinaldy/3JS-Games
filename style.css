@@ -9,13 +9,13 @@ canvas {
 }
 .overlay {
     position: absolute;
-    pointer-events: none; /* Let clicks pass through default */
+    pointer-events: none;
     user-select: none;
-    display: none; /* Hide all overlays by default */
+    display: none;
 }
 .overlay.active {
     display: flex;
-    pointer-events: auto; /* Active menus catch clicks */
+    pointer-events: auto;
 }
 
 /* UI (Game HUD) */
@@ -63,34 +63,80 @@ button:hover { background: #45a049; }
 button:active { transform: scale(0.95); }
 button:disabled { background: #555; cursor: not-allowed; }
 
+/* Game Over Popup */
+#game-over {
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+.popup-box {
+    background: rgba(30, 30, 30, 0.95);
+    border: 2px solid #ffcc00;
+    border-radius: 16px;
+    padding: 40px 50px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 0 40px rgba(255, 204, 0, 0.3);
+}
+.popup-box h2 {
+    font-size: 48px;
+    margin: 0 0 15px 0;
+    color: #ffcc00;
+}
+.popup-box p {
+    font-size: 20px;
+    margin-bottom: 25px;
+    color: #ccc;
+}
+
 /* Editor UI */
 #editor-ui {
-    top: 20px; right: 20px;
-    background: rgba(0, 0, 0, 0.75);
-    padding: 20px;
+    top: 10px; right: 10px; bottom: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
     border-radius: 12px;
     color: white;
     flex-direction: column;
     pointer-events: auto;
+    width: 260px;
+    overflow-y: auto;
 }
-#editor-ui h2 { margin: 0 0 15px 0; color: #4CAF50; }
+#editor-ui h2 { margin: 0 0 10px 0; color: #4CAF50; font-size: 20px; }
 .toolbar {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 6px;
+    margin-bottom: 10px;
 }
 .toolbar label {
     cursor: pointer;
-    padding: 8px;
+    padding: 6px 8px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
-    font-size: 16px;
+    font-size: 14px;
     display: flex;
     align-items: center;
 }
-.toolbar label input { margin-right: 10px; }
+.toolbar label input { margin-right: 8px; flex-shrink: 0; }
 .toolbar label:hover { background: rgba(255, 255, 255, 0.2); }
 #editor-ui button {
     font-size: 16px; padding: 10px; margin: 5px 0; width: 100%;
 }
+
+/* Asset preview thumbnails in editor palette */
+.asset-preview {
+    width: 40px;
+    height: 40px;
+    margin-right: 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+/* Scrollbar styling for editor */
+#editor-ui::-webkit-scrollbar { width: 6px; }
+#editor-ui::-webkit-scrollbar-track { background: transparent; }
+#editor-ui::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }

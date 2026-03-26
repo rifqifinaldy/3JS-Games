@@ -19,13 +19,26 @@
         <p class="controls">Controls: <strong>W A S D</strong> to move</p>
     </div>
 
+    <!-- Game Over Popup -->
+    <div id="game-over" class="overlay">
+        <div class="popup-box">
+            <h2 id="game-over-title">Game Over!</h2>
+            <p id="game-over-msg"></p>
+            <button id="btn-go-menu">Return to Main Menu</button>
+            <button id="btn-go-retry" style="background:#2196F3;">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Editor UI -->
     <div id="editor-ui" class="overlay">
         <h2>Map Builder</h2>
-        <div class="toolbar">
-            <label><input type="radio" name="tool" value="house" checked> Paint House 🧱</label>
+        <div id="editor-palette" class="toolbar">
+            <!-- Populated dynamically by JS -->
+        </div>
+        <hr style="width: 100%; border-color: #555;">
+        <div class="toolbar" style="margin-top:10px;">
             <label><input type="radio" name="tool" value="road"> Erase to Road 🛣️</label>
             <label><input type="radio" name="tool" value="gem"> Toggle Gem 💎</label>
-            <hr style="width: 100%; border-color: #555;">
             <label><input type="radio" name="tool" value="player"> Set Player Spawn 🚙</label>
             <label><input type="radio" name="tool" value="police"> Set Police Spawn 🚓</label>
         </div>

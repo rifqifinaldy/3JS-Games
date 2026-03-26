@@ -6,12 +6,13 @@ import { keys, setupControls } from './controller.js';
 const elMenu = document.getElementById('main-menu');
 const elUI = document.getElementById('ui');
 const elEditorUI = document.getElementById('editor-ui');
+const elGameOver = document.getElementById('game-over');
 const btnPlay = document.getElementById('btn-play');
 const btnEditor = document.getElementById('btn-editor');
 const lblScore = document.getElementById('score');
 
 // --- Global State ---
-let APP_STATE = 'LOADING'; // LOADING, MENU, PLAYING, EDITOR
+let APP_STATE = 'LOADING';
 let isGameOver = false;
 
 // --- Scene Setup ---
@@ -41,11 +42,20 @@ dirLight.shadow.camera.top = 40;
 dirLight.shadow.camera.bottom = -40;
 scene.add(dirLight);
 
-// --- Game Constants & Variables ---
+// --- Constants ---
 const TILE_SIZE = 4;
-const SPEED = 0.15;
+const SPEED = 0.12;
+const TURN_SPEED = 0.04; // Steering rate (radians/frame)
 const POLICE_SPEED = 0.08;
 
+// --- 3rd Person Camera ---
+let camAngleY = Math.PI; // Start behind the car (car faces -Z = Math.PI)
+const CAM_DIST = 12;
+const CAM_HEIGHT = 6;
+const CAM_LERP = 0.08;
+let playerHeading = Math.PI; // Car's facing angle (radians, Math.PI = facing -Z)
+
+// --- Models & Game Objects ---
 const models = {};
 const gameObjects = { houses: [], collectibles: [] };
 let playerModel = null;
@@ -59,11 +69,80 @@ const houseBox = new THREE.Box3();
 const playerBox = new THREE.Box3();
 const policeBox = new THREE.Box3();
 
-// --- Map Data Structure ---
+// --- Map Data ---
 const GRID_W = 15;
 const GRID_H = 13;
 let mapGrid = [];
 
+// --- Asset Registry for Editor ---
+// All placeable building assets from Building Block - Residential
+const ASSET_REGISTRY = [
+    { id: 'building-type-a', label: 'House A', file: 'building-type-a.glb' },
+    { id: 'building-type-b', label: 'House B', file: 'building-type-b.glb' },
+    { id: 'building-type-c', label: 'House C', file: 'building-type-c.glb' },
+    { id: 'building-type-d', label: 'House D', file: 'building-type-d.glb' },
+    { id: 'building-type-e', label: 'House E', file: 'building-type-e.glb' },
+    { id: 'building-type-f', label: 'House F', file: 'building-type-f.glb' },
+    { id: 'building-type-g', label: 'House G', file: 'building-type-g.glb' },
+    { id: 'building-type-h', label: 'House H', file: 'building-type-h.glb' },
+    { id: 'building-type-i', label: 'House I', file: 'building-type-i.glb' },
+    { id: 'building-type-j', label: 'House J', file: 'building-type-j.glb' },
+    { id: 'building-type-k', label: 'House K', file: 'building-type-k.glb' },
+    { id: 'building-type-l', label: 'House L', file: 'building-type-l.glb' },
+    { id: 'building-type-m', label: 'House M', file: 'building-type-m.glb' },
+    { id: 'building-type-n', label: 'House N', file: 'building-type-n.glb' },
+    { id: 'building-type-o', label: 'House O', file: 'building-type-o.glb' },
+    { id: 'building-type-p', label: 'House P', file: 'building-type-p.glb' },
+    { id: 'building-type-q', label: 'House Q', file: 'building-type-q.glb' },
+    { id: 'building-type-r', label: 'House R', file: 'building-type-r.glb' },
+    { id: 'building-type-s', label: 'House S', file: 'building-type-s.glb' },
+    { id: 'building-type-t', label: 'House T', file: 'building-type-t.glb' },
+    { id: 'building-type-u', label: 'House U', file: 'building-type-u.glb' },
+    { id: 'fence', label: 'Fence', file: 'fence.glb' },
+    { id: 'fence-low', label: 'Fence Low', file: 'fence-low.glb' },
+    { id: 'planter', label: 'Planter', file: 'planter.glb' },
+    { id: 'tree-large', label: 'Tree Large', file: 'tree-large.glb' },
+    { id: 'tree-small', label: 'Tree Small', file: 'tree-small.glb' },
+];
+
+// --- Preview Renderer (for thumbnails) ---
+const previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+previewRenderer.setSize(80, 80);
+const previewScene = new THREE.Scene();
+const previewCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+previewCamera.position.set(3, 3, 3);
+previewCamera.lookAt(0, 0.5, 0);
+previewScene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const prevDirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+prevDirLight.position.set(3, 5, 3);
+previewScene.add(prevDirLight);
+
+function generatePreviewDataURL(model) {
+    // Clone and fit to preview
+    const clone = model.clone();
+    
+    // Compute bounding box to auto-scale
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 2.0 / maxDim;
+    clone.scale.multiplyScalar(scale);
+    
+    // Center
+    const center = new THREE.Vector3();
+    new THREE.Box3().setFromObject(clone).getCenter(center);
+    clone.position.sub(center);
+    clone.position.y += 0.3;
+
+    previewScene.add(clone);
+    previewRenderer.render(previewScene, previewCamera);
+    previewScene.remove(clone);
+    
+    return previewRenderer.domElement.toDataURL();
+}
+
+// --- Init Default Map ---
 function initDefaultMap() {
     mapGrid = [];
     for (let z = 0; z < GRID_H; z++) {
@@ -72,6 +151,7 @@ function initDefaultMap() {
             const isBorder = (z === 0 || z === GRID_H - 1 || x === 0 || x === GRID_W - 1);
             row.push({
                 type: isBorder ? 'house' : 'road',
+                assetId: isBorder ? 'building-type-a' : null,
                 rot: 0,
                 hasGem: (!isBorder && Math.random() > 0.8),
                 spawn: null
@@ -79,16 +159,14 @@ function initDefaultMap() {
         }
         mapGrid.push(row);
     }
-    // Set default spawns
     mapGrid[1][1].spawn = 'player';
     mapGrid[1][1].hasGem = false;
     mapGrid[GRID_H - 2][GRID_W - 2].spawn = 'police';
     mapGrid[GRID_H - 2][GRID_W - 2].hasGem = false;
 }
-
 initDefaultMap();
 
-// Ground
+// --- Ground ---
 const groundGeo = new THREE.PlaneGeometry(GRID_W * TILE_SIZE, GRID_H * TILE_SIZE);
 const groundMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -107,10 +185,25 @@ function getGridWorldPos(x, z) {
 const manager = new THREE.LoadingManager();
 const loader = new GLTFLoader(manager);
 
+let assetsLoaded = 0;
+const totalAssets = ASSET_REGISTRY.length + 2; // +2 for sedan and police
+
+function onAssetProgress() {
+    assetsLoaded++;
+    btnPlay.innerText = `Loading... (${assetsLoaded}/${totalAssets})`;
+}
+
 manager.onLoad = () => {
     prepareModel(models.sedan, 1.2);
     prepareModel(models.police, 1.2);
-    prepareModel(models.house, 3.8);
+    
+    ASSET_REGISTRY.forEach(entry => {
+        if (models[entry.id]) {
+            prepareModel(models[entry.id], 3.8);
+        }
+    });
+    
+    buildEditorPalette();
     
     btnPlay.innerText = "Start New Game";
     btnPlay.disabled = false;
@@ -119,9 +212,20 @@ manager.onLoad = () => {
     animate();
 };
 
-loader.load('Assets/Player - Car/sedan.glb', (gltf) => { models.sedan = gltf.scene; });
-loader.load('Assets/Player - Car/police.glb', (gltf) => { models.police = gltf.scene; });
-loader.load('Assets/Building Block - Residential/building-type-a.glb', (gltf) => { models.house = gltf.scene; });
+// Load car models
+loader.load('Assets/Player - Car/sedan.glb', (gltf) => { models.sedan = gltf.scene; onAssetProgress(); });
+loader.load('Assets/Player - Car/police.glb', (gltf) => { models.police = gltf.scene; onAssetProgress(); });
+
+// Load all residential building assets
+ASSET_REGISTRY.forEach(entry => {
+    loader.load(`Assets/Building Block - Residential/${entry.file}`, (gltf) => {
+        models[entry.id] = gltf.scene;
+        onAssetProgress();
+    }, undefined, (err) => {
+        console.warn(`Failed to load ${entry.file}:`, err);
+        onAssetProgress();
+    });
+});
 
 const collectibleGeo = new THREE.OctahedronGeometry(0.3);
 const collectibleMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.2, metalness: 0.8 });
@@ -136,6 +240,41 @@ function prepareModel(model, scale) {
     });
 }
 
+// --- Build Editor Palette with Previews ---
+function buildEditorPalette() {
+    const palette = document.getElementById('editor-palette');
+    palette.innerHTML = '';
+    
+    ASSET_REGISTRY.forEach((entry, idx) => {
+        const label = document.createElement('label');
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'tool';
+        radio.value = entry.id;
+        if (idx === 0) radio.checked = true;
+        
+        // Generate preview thumbnail
+        const img = document.createElement('img');
+        img.className = 'asset-preview';
+        if (models[entry.id]) {
+            img.src = generatePreviewDataURL(models[entry.id]);
+        }
+        
+        const span = document.createElement('span');
+        span.textContent = entry.label;
+        
+        label.appendChild(radio);
+        label.appendChild(img);
+        label.appendChild(span);
+        palette.appendChild(label);
+        
+        radio.addEventListener('change', () => {
+            currentTool = entry.id;
+            updateHologramVisual();
+        });
+    });
+}
+
 // --- State Transitions ---
 function clearWorld() {
     gameObjects.houses.forEach(h => scene.remove(h));
@@ -144,6 +283,8 @@ function clearWorld() {
     if (policeModel) scene.remove(policeModel);
     gameObjects.houses = [];
     gameObjects.collectibles = [];
+    playerModel = null;
+    policeModel = null;
 }
 
 function showMainMenu() {
@@ -151,8 +292,9 @@ function showMainMenu() {
     elMenu.classList.add('active');
     elUI.classList.remove('active');
     elEditorUI.classList.remove('active');
+    elGameOver.classList.remove('active');
     clearWorld();
-    rebuildWorldVisuals(true); // Build purely for visual background
+    rebuildWorldVisuals(true);
 }
 
 function startGame() {
@@ -160,19 +302,27 @@ function startGame() {
     isGameOver = false;
     elMenu.classList.remove('active');
     elEditorUI.classList.remove('active');
+    elGameOver.classList.remove('active');
     elUI.classList.add('active');
     
     clearWorld();
     rebuildWorldVisuals(false);
 }
 
-// --- Game Logic ---
+function showGameOver(title, message) {
+    isGameOver = true;
+    document.getElementById('game-over-title').innerText = title;
+    document.getElementById('game-over-msg').innerText = message;
+    elGameOver.classList.add('active');
+}
+
+// --- World Builder ---
 function rebuildWorldVisuals(isMenuMode) {
     score = 0;
     totalCollectibles = 0;
     
     let pSpawn = { x: 1, z: 1 };
-    let polSpawn = { x: GRID_W-2, z: GRID_H-2 };
+    let polSpawn = { x: GRID_W - 2, z: GRID_H - 2 };
 
     for (let z = 0; z < GRID_H; z++) {
         for (let x = 0; x < GRID_W; x++) {
@@ -180,11 +330,14 @@ function rebuildWorldVisuals(isMenuMode) {
             const pos = getGridWorldPos(x, z);
             
             if (cell.type === 'house') {
-                const house = models.house.clone();
-                house.position.set(pos.x, 0, pos.z);
-                house.rotation.y = cell.rot;
-                scene.add(house);
-                gameObjects.houses.push(house);
+                const assetId = cell.assetId || 'building-type-a';
+                if (models[assetId]) {
+                    const house = models[assetId].clone();
+                    house.position.set(pos.x, 0, pos.z);
+                    house.rotation.y = cell.rot;
+                    scene.add(house);
+                    gameObjects.houses.push(house);
+                }
             } else if (cell.type === 'road' && cell.hasGem && !isMenuMode) {
                 const coin = new THREE.Mesh(collectibleGeo, collectibleMat);
                 coin.position.set(pos.x, 0.5, pos.z);
@@ -214,9 +367,13 @@ function rebuildWorldVisuals(isMenuMode) {
         policeTargetZ = polSpawn.z;
         policeDir = { x: -1, z: 0 };
         scene.add(policeModel);
+        
+        // Reset camera angle to behind player
+        camAngleY = 0;
     }
 }
 
+// --- Collision ---
 function checkCollision(box, objectsList, shrinkAmount = 0.2) {
     for (const obj of objectsList) {
         houseBox.setFromObject(obj);
@@ -226,6 +383,7 @@ function checkCollision(box, objectsList, shrinkAmount = 0.2) {
     return false;
 }
 
+// --- Police AI ---
 function updatePoliceAI() {
     if (!policeModel) return;
 
@@ -258,7 +416,7 @@ function updatePoliceAI() {
         let validDirs = dirs.filter(d => {
             const nz = policeTargetZ + d.z;
             const nx = policeTargetX + d.x;
-            if(nz<0 || nz>=GRID_H || nx<0 || nx>=GRID_W) return false;
+            if (nz < 0 || nz >= GRID_H || nx < 0 || nx >= GRID_W) return false;
             return mapGrid[nz][nx].type === 'road';
         });
 
@@ -276,7 +434,7 @@ function updatePoliceAI() {
 
 // --- Editor Mode ---
 let editorHologram = new THREE.Group();
-let currentTool = 'house';
+let currentTool = 'building-type-a';
 let currentRot = 0;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -286,35 +444,43 @@ function startEditor() {
     APP_STATE = 'EDITOR';
     elMenu.classList.remove('active');
     elUI.classList.remove('active');
+    elGameOver.classList.remove('active');
     elEditorUI.classList.add('active');
     
     clearWorld();
     rebuildWorldVisuals(true);
     
-    if(!editorGridHelper) {
+    if (!editorGridHelper) {
         editorGridHelper = new THREE.GridHelper(Math.max(GRID_W, GRID_H) * TILE_SIZE, Math.max(GRID_W, GRID_H));
         editorGridHelper.position.y = 0.01;
         scene.add(editorGridHelper);
     }
     editorGridHelper.visible = true;
     scene.add(editorHologram);
-
     updateHologramVisual();
 }
 
 function updateHologramVisual() {
     editorHologram.clear();
     let mesh = null;
-    if (currentTool === 'house') mesh = models.house.clone();
-    else if (currentTool === 'player') mesh = models.sedan.clone();
-    else if (currentTool === 'police') mesh = models.police.clone();
-    else if (currentTool === 'gem') mesh = new THREE.Mesh(collectibleGeo, collectibleMat);
+    
+    // Check if it's a registered building asset
+    const isAsset = ASSET_REGISTRY.some(a => a.id === currentTool);
+    
+    if (isAsset && models[currentTool]) {
+        mesh = models[currentTool].clone();
+    } else if (currentTool === 'player') {
+        mesh = models.sedan.clone();
+    } else if (currentTool === 'police') {
+        mesh = models.police.clone();
+    } else if (currentTool === 'gem') {
+        mesh = new THREE.Mesh(collectibleGeo, collectibleMat);
+    }
     
     if (mesh) {
-        if(currentTool === 'gem') mesh.position.y = 0.5;
-        // Make it semi-transparent
+        if (currentTool === 'gem') mesh.position.y = 0.5;
         mesh.traverse(n => {
-            if(n.isMesh) {
+            if (n.isMesh) {
                 n.material = n.material.clone();
                 n.material.transparent = true;
                 n.material.opacity = 0.5;
@@ -325,7 +491,7 @@ function updateHologramVisual() {
     }
 }
 
-// Editor Interaction
+// --- Editor Interaction ---
 window.addEventListener('mousemove', (e) => {
     if (APP_STATE !== 'EDITOR') return;
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -334,8 +500,6 @@ window.addEventListener('mousemove', (e) => {
 
 window.addEventListener('mousedown', (e) => {
     if (APP_STATE !== 'EDITOR' || e.button !== 0) return;
-    
-    // Check if clicked exactly on the UI to avoid painting under menus
     if (e.target.closest('.overlay')) return;
 
     raycaster.setFromCamera(mouse, camera);
@@ -348,26 +512,29 @@ window.addEventListener('mousedown', (e) => {
 
         if (gX >= 0 && gX < GRID_W && gZ >= 0 && gZ < GRID_H) {
             const cell = mapGrid[gZ][gX];
+            const isAsset = ASSET_REGISTRY.some(a => a.id === currentTool);
 
-            if (currentTool === 'house') {
+            if (isAsset) {
                 cell.type = 'house';
+                cell.assetId = currentTool;
                 cell.rot = currentRot;
                 cell.spawn = null;
                 cell.hasGem = false;
             } else if (currentTool === 'road') {
                 cell.type = 'road';
+                cell.assetId = null;
                 cell.spawn = null;
                 cell.hasGem = false;
             } else if (currentTool === 'gem') {
                 if (cell.type === 'road' && !cell.spawn) cell.hasGem = !cell.hasGem;
             } else if (currentTool === 'player' || currentTool === 'police') {
-                // Clear old spawn
-                for (let zz=0; zz<GRID_H; zz++) {
-                    for (let xx=0; xx<GRID_W; xx++) {
+                for (let zz = 0; zz < GRID_H; zz++) {
+                    for (let xx = 0; xx < GRID_W; xx++) {
                         if (mapGrid[zz][xx].spawn === currentTool) mapGrid[zz][xx].spawn = null;
                     }
                 }
                 cell.type = 'road';
+                cell.assetId = null;
                 cell.spawn = currentTool;
                 cell.hasGem = false;
             }
@@ -385,26 +552,46 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-document.querySelectorAll('input[name="tool"]').forEach(radio => {
+// Non-asset tools (road, gem, player, police) from HTML
+document.querySelectorAll('#editor-ui .toolbar:not(#editor-palette) input[name="tool"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         currentTool = e.target.value;
         updateHologramVisual();
+        // Uncheck palette radios
+        document.querySelectorAll('#editor-palette input[name="tool"]').forEach(r => r.checked = false);
     });
 });
 
-// UI Button Listeners
+// --- Right-click camera orbit in PLAYING mode ---
+let isRightMouseDown = false;
+window.addEventListener('mousedown', (e) => {
+    if (e.button === 2) isRightMouseDown = true;
+});
+window.addEventListener('mouseup', (e) => {
+    if (e.button === 2) isRightMouseDown = false;
+});
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+window.addEventListener('mousemove', (e) => {
+    if (APP_STATE === 'PLAYING' && isRightMouseDown) {
+        camAngleY -= e.movementX * 0.005;
+    }
+});
+
+// --- UI Button Listeners ---
 btnPlay.addEventListener('click', startGame);
 btnEditor.addEventListener('click', startEditor);
 document.getElementById('btn-editor-play').addEventListener('click', () => {
-    if(editorGridHelper) editorGridHelper.visible = false;
+    if (editorGridHelper) editorGridHelper.visible = false;
     scene.remove(editorHologram);
     startGame();
 });
 document.getElementById('btn-editor-menu').addEventListener('click', () => {
-    if(editorGridHelper) editorGridHelper.visible = false;
+    if (editorGridHelper) editorGridHelper.visible = false;
     scene.remove(editorHologram);
     showMainMenu();
 });
+document.getElementById('btn-go-menu').addEventListener('click', () => showMainMenu());
+document.getElementById('btn-go-retry').addEventListener('click', () => startGame());
 
 // --- Main Loop ---
 setupControls();
@@ -443,19 +630,39 @@ function animate() {
         }
     }
     else if (APP_STATE === 'PLAYING' && !isGameOver) {
-        // Player Movement
+        // --- GTA-style Movement ---
         const oldX = playerModel.position.x;
         const oldZ = playerModel.position.z;
         let isMoving = false;
-        let targetRotation = playerModel.rotation.y;
+        let isReversing = false;
 
-        if (keys.w) { playerModel.position.z -= SPEED; targetRotation = Math.PI; isMoving = true; }
-        if (keys.s) { playerModel.position.z += SPEED; targetRotation = 0; isMoving = true; }
-        if (keys.a) { playerModel.position.x -= SPEED; targetRotation = Math.PI / 2; isMoving = true; }
-        if (keys.d) { playerModel.position.x += SPEED; targetRotation = -Math.PI / 2; isMoving = true; }
+        // A/D = Steer (only while moving)
+        if (keys.a && (keys.w || keys.s)) {
+            playerHeading += TURN_SPEED * (keys.s ? -1 : 1);
+        }
+        if (keys.d && (keys.w || keys.s)) {
+            playerHeading -= TURN_SPEED * (keys.s ? -1 : 1);
+        }
 
-        if (isMoving) playerModel.rotation.y = targetRotation; 
+        // W = Drive forward in the direction the car faces
+        if (keys.w) {
+            playerModel.position.x -= Math.sin(playerHeading) * SPEED;
+            playerModel.position.z -= Math.cos(playerHeading) * SPEED;
+            isMoving = true;
+        }
+        // S = Reverse
+        if (keys.s) {
+            playerModel.position.x += Math.sin(playerHeading) * SPEED * 0.6;
+            playerModel.position.z += Math.cos(playerHeading) * SPEED * 0.6;
+            isMoving = true;
+            isReversing = true;
+        }
 
+        // Apply car visual rotation to match heading
+        // The .glb model faces +Z by default, but our heading treats -Z as forward, so offset by PI
+        playerModel.rotation.y = playerHeading + Math.PI;
+
+        // Wall collision
         playerBox.setFromObject(playerModel);
         if (checkCollision(playerBox, gameObjects.houses, 0.4)) {
             playerModel.position.x = oldX;
@@ -464,17 +671,15 @@ function animate() {
 
         updatePoliceAI();
 
+        // Police catch check
         playerBox.setFromObject(playerModel);
         policeBox.setFromObject(policeModel);
         policeBox.expandByScalar(-0.2);
         if (playerBox.intersectsBox(policeBox)) {
-            isGameOver = true;
-            setTimeout(() => {
-                alert("Game Over! The police caught you!");
-                showMainMenu();
-            }, 50);
+            showGameOver("Busted! 🚔", "The police caught you!");
         }
 
+        // Collectibles
         const time = Date.now() * 0.003;
         for (let i = gameObjects.collectibles.length - 1; i >= 0; i--) {
             const item = gameObjects.collectibles[i];
@@ -488,19 +693,57 @@ function animate() {
                 lblScore.innerText = `${score} / ${totalCollectibles}`;
 
                 if (score === totalCollectibles && totalCollectibles > 0) {
-                    isGameOver = true;
-                    setTimeout(() => {
-                        alert("You win! You survived suburbia!");
-                        showMainMenu();
-                    }, 50);
+                    showGameOver("You Win! 🏆", "You survived suburbia and collected all gems!");
                 }
             }
         }
 
-        camera.position.x += (playerModel.position.x - camera.position.x) * 0.1;
-        camera.position.y += (playerModel.position.y + 16 - camera.position.y) * 0.1;
-        camera.position.z += (playerModel.position.z + 14 - camera.position.z) * 0.1;
-        camera.lookAt(playerModel.position);
+        // --- GTA-style 3rd Person Camera ---
+        // Camera target angle: always behind car, flip when reversing
+        let targetCamAngle = playerHeading;
+        if (isReversing) {
+            targetCamAngle = playerHeading + Math.PI; // Look at front of car when reversing
+        }
+
+        // Only auto-follow when not manually orbiting with right-click
+        if (!isRightMouseDown) {
+            let angleDiff = targetCamAngle - camAngleY;
+            // Normalize to [-PI, PI] for shortest rotation
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+            camAngleY += angleDiff * 0.08;
+        }
+
+        const px = playerModel.position.x;
+        const py = playerModel.position.y;
+        const pz = playerModel.position.z;
+
+        // Desired camera position
+        let desiredDist = CAM_DIST;
+        const desiredX = px + Math.sin(camAngleY) * desiredDist;
+        const desiredZ = pz + Math.cos(camAngleY) * desiredDist;
+        const desiredY = py + CAM_HEIGHT;
+
+        // Raycast from player to desired camera pos to detect occlusion
+        const playerPos = new THREE.Vector3(px, py + 1, pz);
+        const desiredPos = new THREE.Vector3(desiredX, desiredY, desiredZ);
+        const camDirVec = new THREE.Vector3().subVectors(desiredPos, playerPos).normalize();
+        const camRay = new THREE.Raycaster(playerPos, camDirVec, 0, desiredDist + 2);
+        const camHits = camRay.intersectObjects(gameObjects.houses, true);
+
+        let finalDist = desiredDist;
+        if (camHits.length > 0) {
+            finalDist = Math.max(camHits[0].distance - 1.5, 2);
+        }
+
+        const camX = px + Math.sin(camAngleY) * finalDist;
+        const camZ = pz + Math.cos(camAngleY) * finalDist;
+        const camY = py + CAM_HEIGHT * (finalDist / desiredDist);
+
+        camera.position.x += (camX - camera.position.x) * CAM_LERP;
+        camera.position.y += (camY - camera.position.y) * CAM_LERP;
+        camera.position.z += (camZ - camera.position.z) * CAM_LERP;
+        camera.lookAt(px, py + 1, pz);
     }
 
     renderer.render(scene, camera);
