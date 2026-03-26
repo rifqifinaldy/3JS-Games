@@ -74,36 +74,76 @@ const GRID_W = 15;
 const GRID_H = 13;
 let mapGrid = [];
 
-// --- Asset Registry for Editor ---
-// All placeable building assets from Building Block - Residential
-const ASSET_REGISTRY = [
-    { id: 'building-type-a', label: 'House A', file: 'building-type-a.glb' },
-    { id: 'building-type-b', label: 'House B', file: 'building-type-b.glb' },
-    { id: 'building-type-c', label: 'House C', file: 'building-type-c.glb' },
-    { id: 'building-type-d', label: 'House D', file: 'building-type-d.glb' },
-    { id: 'building-type-e', label: 'House E', file: 'building-type-e.glb' },
-    { id: 'building-type-f', label: 'House F', file: 'building-type-f.glb' },
-    { id: 'building-type-g', label: 'House G', file: 'building-type-g.glb' },
-    { id: 'building-type-h', label: 'House H', file: 'building-type-h.glb' },
-    { id: 'building-type-i', label: 'House I', file: 'building-type-i.glb' },
-    { id: 'building-type-j', label: 'House J', file: 'building-type-j.glb' },
-    { id: 'building-type-k', label: 'House K', file: 'building-type-k.glb' },
-    { id: 'building-type-l', label: 'House L', file: 'building-type-l.glb' },
-    { id: 'building-type-m', label: 'House M', file: 'building-type-m.glb' },
-    { id: 'building-type-n', label: 'House N', file: 'building-type-n.glb' },
-    { id: 'building-type-o', label: 'House O', file: 'building-type-o.glb' },
-    { id: 'building-type-p', label: 'House P', file: 'building-type-p.glb' },
-    { id: 'building-type-q', label: 'House Q', file: 'building-type-q.glb' },
-    { id: 'building-type-r', label: 'House R', file: 'building-type-r.glb' },
-    { id: 'building-type-s', label: 'House S', file: 'building-type-s.glb' },
-    { id: 'building-type-t', label: 'House T', file: 'building-type-t.glb' },
-    { id: 'building-type-u', label: 'House U', file: 'building-type-u.glb' },
-    { id: 'fence', label: 'Fence', file: 'fence.glb' },
-    { id: 'fence-low', label: 'Fence Low', file: 'fence-low.glb' },
-    { id: 'planter', label: 'Planter', file: 'planter.glb' },
-    { id: 'tree-large', label: 'Tree Large', file: 'tree-large.glb' },
-    { id: 'tree-small', label: 'Tree Small', file: 'tree-small.glb' },
+// --- Asset Registry for Editor (grouped by subfolder) ---
+const ASSET_GROUPS = [
+    {
+        group: 'Buildings',
+        folder: 'Assets/Building Block - Residential/Buildings',
+        items: [
+            { id: 'building-type-a', label: 'House A', file: 'building-type-a.glb' },
+            { id: 'building-type-b', label: 'House B', file: 'building-type-b.glb' },
+            { id: 'building-type-c', label: 'House C', file: 'building-type-c.glb' },
+            { id: 'building-type-d', label: 'House D', file: 'building-type-d.glb' },
+            { id: 'building-type-e', label: 'House E', file: 'building-type-e.glb' },
+            { id: 'building-type-f', label: 'House F', file: 'building-type-f.glb' },
+            { id: 'building-type-g', label: 'House G', file: 'building-type-g.glb' },
+            { id: 'building-type-h', label: 'House H', file: 'building-type-h.glb' },
+            { id: 'building-type-i', label: 'House I', file: 'building-type-i.glb' },
+            { id: 'building-type-j', label: 'House J', file: 'building-type-j.glb' },
+            { id: 'building-type-k', label: 'House K', file: 'building-type-k.glb' },
+            { id: 'building-type-l', label: 'House L', file: 'building-type-l.glb' },
+            { id: 'building-type-m', label: 'House M', file: 'building-type-m.glb' },
+            { id: 'building-type-n', label: 'House N', file: 'building-type-n.glb' },
+            { id: 'building-type-o', label: 'House O', file: 'building-type-o.glb' },
+            { id: 'building-type-p', label: 'House P', file: 'building-type-p.glb' },
+            { id: 'building-type-q', label: 'House Q', file: 'building-type-q.glb' },
+            { id: 'building-type-r', label: 'House R', file: 'building-type-r.glb' },
+            { id: 'building-type-s', label: 'House S', file: 'building-type-s.glb' },
+            { id: 'building-type-t', label: 'House T', file: 'building-type-t.glb' },
+            { id: 'building-type-u', label: 'House U', file: 'building-type-u.glb' },
+        ]
+    },
+    {
+        group: 'Fences',
+        folder: 'Assets/Building Block - Residential/Fences',
+        items: [
+            { id: 'fence', label: 'Fence', file: 'fence.glb' },
+            { id: 'fence-low', label: 'Fence Low', file: 'fence-low.glb' },
+            { id: 'fence-1x2', label: 'Fence 1x2', file: 'fence-1x2.glb' },
+            { id: 'fence-1x3', label: 'Fence 1x3', file: 'fence-1x3.glb' },
+            { id: 'fence-1x4', label: 'Fence 1x4', file: 'fence-1x4.glb' },
+            { id: 'fence-2x2', label: 'Fence 2x2', file: 'fence-2x2.glb' },
+            { id: 'fence-2x3', label: 'Fence 2x3', file: 'fence-2x3.glb' },
+            { id: 'fence-3x2', label: 'Fence 3x2', file: 'fence-3x2.glb' },
+            { id: 'fence-3x3', label: 'Fence 3x3', file: 'fence-3x3.glb' },
+        ]
+    },
+    {
+        group: 'Trees',
+        folder: 'Assets/Building Block - Residential/Trees',
+        items: [
+            { id: 'tree-large', label: 'Tree Large', file: 'tree-large.glb' },
+            { id: 'tree-small', label: 'Tree Small', file: 'tree-small.glb' },
+        ]
+    },
+    {
+        group: 'Others',
+        folder: 'Assets/Building Block - Residential/Others',
+        items: [
+            { id: 'driveway-long', label: 'Driveway Long', file: 'driveway-long.glb' },
+            { id: 'driveway-short', label: 'Driveway Short', file: 'driveway-short.glb' },
+            { id: 'path-long', label: 'Path Long', file: 'path-long.glb' },
+            { id: 'path-short', label: 'Path Short', file: 'path-short.glb' },
+            { id: 'path-stones-long', label: 'Stones Long', file: 'path-stones-long.glb' },
+            { id: 'path-stones-messy', label: 'Stones Messy', file: 'path-stones-messy.glb' },
+            { id: 'path-stones-short', label: 'Stones Short', file: 'path-stones-short.glb' },
+            { id: 'planter', label: 'Planter', file: 'planter.glb' },
+        ]
+    }
 ];
+
+// Flatten for easy iteration
+const ASSET_REGISTRY = ASSET_GROUPS.flatMap(g => g.items.map(i => ({ ...i, folder: g.folder, group: g.group })));
 
 // --- Preview Renderer (for thumbnails) ---
 const previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -142,8 +182,52 @@ function generatePreviewDataURL(model) {
     return previewRenderer.domElement.toDataURL();
 }
 
-// --- Init Default Map ---
+// --- Init Default Map (pre-designed suburban layout) ---
+// H = house, _ = road, G = road+gem, P = player spawn, C = police spawn
+const DEFAULT_MAP_STR = [
+    'HHHHHHHHHHHHHHH',
+    'HP_G_H___G___CH',
+    'H_HHH_HHH_HH_H',
+    'H___G___G___G_H',
+    'HHH_HHH_HHH_HH',
+    'H_G_____G_____H',
+    'H_HHH_H_H_HHH_',
+    'H_G___G___G___H',
+    'HH_HHH_HHH_HHH',
+    'H___G_____G___H',
+    'H_HHH_HHH_HH_H',
+    'HG___G___G____H',
+    'HHHHHHHHHHHHHHH',
+];
+
 function initDefaultMap() {
+    mapGrid = [];
+    const houseTypes = ['building-type-a','building-type-b','building-type-c','building-type-d','building-type-e',
+                        'building-type-f','building-type-g','building-type-h','building-type-i','building-type-j'];
+    for (let z = 0; z < GRID_H; z++) {
+        const row = [];
+        for (let x = 0; x < GRID_W; x++) {
+            const ch = DEFAULT_MAP_STR[z]?.[x] || '_';
+            const cell = { type: 'road', assetId: null, rot: 0, hasGem: false, spawn: null };
+            if (ch === 'H') {
+                cell.type = 'house';
+                cell.assetId = houseTypes[Math.floor(Math.random() * houseTypes.length)];
+                cell.rot = (Math.floor(Math.random() * 4) * Math.PI) / 2;
+            } else if (ch === 'G') {
+                cell.hasGem = true;
+            } else if (ch === 'P') {
+                cell.spawn = 'player';
+            } else if (ch === 'C') {
+                cell.spawn = 'police';
+            }
+            row.push(cell);
+        }
+        mapGrid.push(row);
+    }
+}
+
+// Empty map for the editor (just borders)
+function initEmptyMap() {
     mapGrid = [];
     for (let z = 0; z < GRID_H; z++) {
         const row = [];
@@ -153,16 +237,14 @@ function initDefaultMap() {
                 type: isBorder ? 'house' : 'road',
                 assetId: isBorder ? 'building-type-a' : null,
                 rot: 0,
-                hasGem: (!isBorder && Math.random() > 0.8),
+                hasGem: false,
                 spawn: null
             });
         }
         mapGrid.push(row);
     }
     mapGrid[1][1].spawn = 'player';
-    mapGrid[1][1].hasGem = false;
     mapGrid[GRID_H - 2][GRID_W - 2].spawn = 'police';
-    mapGrid[GRID_H - 2][GRID_W - 2].hasGem = false;
 }
 initDefaultMap();
 
@@ -216,13 +298,13 @@ manager.onLoad = () => {
 loader.load('Assets/Player - Car/sedan.glb', (gltf) => { models.sedan = gltf.scene; onAssetProgress(); });
 loader.load('Assets/Player - Car/police.glb', (gltf) => { models.police = gltf.scene; onAssetProgress(); });
 
-// Load all residential building assets
+// Load all building assets from their respective subfolders
 ASSET_REGISTRY.forEach(entry => {
-    loader.load(`Assets/Building Block - Residential/${entry.file}`, (gltf) => {
+    loader.load(`${entry.folder}/${entry.file}`, (gltf) => {
         models[entry.id] = gltf.scene;
         onAssetProgress();
     }, undefined, (err) => {
-        console.warn(`Failed to load ${entry.file}:`, err);
+        console.warn(`Failed to load ${entry.folder}/${entry.file}:`, err);
         onAssetProgress();
     });
 });
@@ -240,37 +322,60 @@ function prepareModel(model, scale) {
     });
 }
 
-// --- Build Editor Palette with Previews ---
+// --- Build Editor Palette with Accordion Groups ---
 function buildEditorPalette() {
     const palette = document.getElementById('editor-palette');
     palette.innerHTML = '';
+    let isFirst = true;
     
-    ASSET_REGISTRY.forEach((entry, idx) => {
-        const label = document.createElement('label');
-        const radio = document.createElement('input');
-        radio.type = 'radio';
-        radio.name = 'tool';
-        radio.value = entry.id;
-        if (idx === 0) radio.checked = true;
+    ASSET_GROUPS.forEach((group, groupIdx) => {
+        // Accordion header (clickable)
+        const header = document.createElement('div');
+        header.className = 'accordion-header';
+        header.innerHTML = `<span class="accordion-arrow">&#9660;</span> ${group.group} <span class="accordion-count">(${group.items.length})</span>`;
+        palette.appendChild(header);
         
-        // Generate preview thumbnail
-        const img = document.createElement('img');
-        img.className = 'asset-preview';
-        if (models[entry.id]) {
-            img.src = generatePreviewDataURL(models[entry.id]);
-        }
+        // Accordion body (collapsible container)
+        const body = document.createElement('div');
+        body.className = 'accordion-body';
+        if (groupIdx > 0) body.classList.add('collapsed'); // Only first group open by default
         
-        const span = document.createElement('span');
-        span.textContent = entry.label;
+        group.items.forEach(entry => {
+            const label = document.createElement('label');
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'tool';
+            radio.value = entry.id;
+            if (isFirst) { radio.checked = true; isFirst = false; }
+            
+            const img = document.createElement('img');
+            img.className = 'asset-preview';
+            if (models[entry.id]) {
+                img.src = generatePreviewDataURL(models[entry.id]);
+            }
+            
+            const span = document.createElement('span');
+            span.textContent = entry.label;
+            
+            label.appendChild(radio);
+            label.appendChild(img);
+            label.appendChild(span);
+            body.appendChild(label);
+            
+            radio.addEventListener('change', () => {
+                currentTool = entry.id;
+                updateHologramVisual();
+                document.querySelectorAll('#editor-ui .toolbar:not(#editor-palette) input[name="tool"]').forEach(r => r.checked = false);
+            });
+        });
         
-        label.appendChild(radio);
-        label.appendChild(img);
-        label.appendChild(span);
-        palette.appendChild(label);
+        palette.appendChild(body);
         
-        radio.addEventListener('change', () => {
-            currentTool = entry.id;
-            updateHologramVisual();
+        // Toggle accordion on click
+        header.addEventListener('click', () => {
+            body.classList.toggle('collapsed');
+            const arrow = header.querySelector('.accordion-arrow');
+            arrow.innerHTML = body.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
         });
     });
 }
@@ -297,7 +402,8 @@ function showMainMenu() {
     rebuildWorldVisuals(true);
 }
 
-function startGame() {
+function startGame(useDefaultMap = false) {
+    if (useDefaultMap) initDefaultMap();
     APP_STATE = 'PLAYING';
     isGameOver = false;
     elMenu.classList.remove('active');
@@ -442,6 +548,7 @@ let editorGridHelper = null;
 
 function startEditor() {
     APP_STATE = 'EDITOR';
+    initEmptyMap();
     elMenu.classList.remove('active');
     elUI.classList.remove('active');
     elGameOver.classList.remove('active');
@@ -578,12 +685,12 @@ window.addEventListener('mousemove', (e) => {
 });
 
 // --- UI Button Listeners ---
-btnPlay.addEventListener('click', startGame);
+btnPlay.addEventListener('click', () => startGame(true)); // Start New Game = use pre-designed map
 btnEditor.addEventListener('click', startEditor);
 document.getElementById('btn-editor-play').addEventListener('click', () => {
     if (editorGridHelper) editorGridHelper.visible = false;
     scene.remove(editorHologram);
-    startGame();
+    startGame(false); // Play custom map from editor
 });
 document.getElementById('btn-editor-menu').addEventListener('click', () => {
     if (editorGridHelper) editorGridHelper.visible = false;
@@ -591,7 +698,7 @@ document.getElementById('btn-editor-menu').addEventListener('click', () => {
     showMainMenu();
 });
 document.getElementById('btn-go-menu').addEventListener('click', () => showMainMenu());
-document.getElementById('btn-go-retry').addEventListener('click', () => startGame());
+document.getElementById('btn-go-retry').addEventListener('click', () => startGame(false));
 
 // --- Main Loop ---
 setupControls();
@@ -662,9 +769,17 @@ function animate() {
         // The .glb model faces +Z by default, but our heading treats -Z as forward, so offset by PI
         playerModel.rotation.y = playerHeading + Math.PI;
 
-        // Wall collision
-        playerBox.setFromObject(playerModel);
-        if (checkCollision(playerBox, gameObjects.houses, 0.4)) {
+        // Wall collision — use grid lookup instead of Box3 to prevent getting stuck
+        // Convert player world position to grid coordinates and check if that tile is blocked
+        const newGX = Math.floor((playerModel.position.x / TILE_SIZE) + (GRID_W / 2));
+        const newGZ = Math.floor((playerModel.position.z / TILE_SIZE) + (GRID_H / 2));
+        
+        const isBlocked = (
+            newGX < 0 || newGX >= GRID_W || newGZ < 0 || newGZ >= GRID_H ||
+            mapGrid[newGZ]?.[newGX]?.type === 'house'
+        );
+        
+        if (isBlocked) {
             playerModel.position.x = oldX;
             playerModel.position.z = oldZ;
         }
