@@ -1,0 +1,7 @@
+.git
+.gitignore
+.gemini
+fly.toml
+Dockerfile
+node_modules
+*.md

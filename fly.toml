@@ -1,0 +1,18 @@
+# fly.toml configuration for a static web app
+# Generated to serve index.html via Nginx
+
+app = "threejs-pacman-game" # Replace with your chosen app name
+primary_region = "" # Your preferred region (e.g., "sin" for Singapore)
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
